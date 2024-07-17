@@ -14,6 +14,7 @@ dotenv.config();
 wppconnect
   .create({
     useChrome: false,
+    logQR: true,
     browserArgs: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
