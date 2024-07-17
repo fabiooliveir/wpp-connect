@@ -28,8 +28,11 @@ wppconnect
     ],
     disableWelcome: true, // Desabilita a tela de boas-vindas
     session: 'sessionName',
-    catchQR: (base64Qr, asciiQR) => {
+    catchQR: (base64Qr, asciiQR, attempts = 3) => {
       console.log(asciiQR);
+      if (attempts <= 0) {
+        console.error('Não foi possível capturar o QR code após 3 tentativas.');
+      }
     }
   })
   .then((client) => start(client))
