@@ -12,7 +12,11 @@ dotenv.config();
 
 // Inicializa o wppconnect e chama a função iniciar
 wppconnect
-  .create()
+  .create({
+    puppeteerOptions: {
+      args: ['--no-sandbox']
+    }
+  })
   .then((client) => start(client))
   .catch((error) => console.log(error));
 
