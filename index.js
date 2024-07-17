@@ -14,8 +14,11 @@ dotenv.config();
 wppconnect
   .create({
     puppeteerOptions: {
-      args: ['--no-sandbox']
-    }
+      headless: 'shell',
+      args: ['--no-sandbox'],
+      ignoreDefaultArgs: ['--disable-extensions'],
+    },
+    disableWelcome: true, // desabilita: true (assumindo que isso desabilita a tela de boas-vindas)
   })
   .then((client) => start(client))
   .catch((error) => console.log(error));
