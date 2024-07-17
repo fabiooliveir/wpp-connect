@@ -13,20 +13,18 @@ dotenv.config();
 // Inicializa o wppconnect e chama a função iniciar
 wppconnect
   .create({
-    puppeteerOptions: {
-      headless: false,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process',
-        '--disable-gpu'
-      ],
-    },
-    disableWelcome: true, // Assumindo que isso desabilita a tela de boas-vindas
+    useChrome: false,
+    browserArgs: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--single-process',
+      '--disable-gpu'
+    ],
+    disableWelcome: true // Desabilita a tela de boas-vindas
   })
   .then((client) => start(client))
   .catch((error) => console.log(error));
