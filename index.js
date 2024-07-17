@@ -24,7 +24,11 @@ wppconnect
       '--single-process',
       '--disable-gpu'
     ],
-    disableWelcome: true // Desabilita a tela de boas-vindas
+    disableWelcome: true, // Desabilita a tela de boas-vindas
+    session: 'sessionName',
+    catchQR: (base64Qr, asciiQR) => {
+      console.log(asciiQR);
+    }
   })
   .then((client) => start(client))
   .catch((error) => console.log(error));
