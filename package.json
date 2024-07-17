@@ -1,0 +1,33 @@
+{
+  "name": "whatsapp-gemini-integration",
+  "version": "1.0.0",
+  "description": "Integração do WhatsApp com Gemini usando WPPConnect e Google Generative AI",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.15.0",
+    "@wppconnect-team/wppconnect": "^1.32.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "fs": "^0.0.1-security"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "keywords": [
+    "WhatsApp",
+    "Gemini",
+    "WPPConnect",
+    "Google",
+    "Generative AI",
+    "Express"
+  ],
+  "author": "Seu Nome",
+  "license": "MIT"
+}
