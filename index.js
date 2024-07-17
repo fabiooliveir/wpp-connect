@@ -15,6 +15,7 @@ wppconnect
   .create({
     useChrome: false,
     logQR: true,
+    autoClose: false,
     browserArgs: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
