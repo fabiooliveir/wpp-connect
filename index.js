@@ -15,7 +15,6 @@ wppconnect
   .create({
     useChrome: false,
     logQR: true,
-    autoClose: false,
     browserArgs: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -26,14 +25,7 @@ wppconnect
       '--single-process',
       '--disable-gpu'
     ],
-    disableWelcome: true, // Desabilita a tela de boas-vindas
-    session: 'sessionName',
-    catchQR: (base64Qr, asciiQR, attempts = 3) => {
-      console.log(asciiQR);
-      if (attempts <= 0) {
-        console.error('Não foi possível capturar o QR code após 3 tentativas.');
-      }
-    }
+    disableWelcome: true    
   })
   .then((client) => start(client))
   .catch((error) => console.log(error));
@@ -41,7 +33,7 @@ wppconnect
 // Função que inicia a conexão com o WhatsApp
 function start(client) {
   client.onMessage(async (message) => {
-    if (!message.isGroupMsg) {
+    if (message.isUser) {
       try {
         // Extrai o nome do contato
         const contactName = message.sender.pushname || message.sender.verifiedName || message.sender.formattedName || 'Contato';
@@ -78,14 +70,14 @@ async function isRequestMessage(inputText) {
 
   const model = genAI.getGenerativeModel({
     model: 'gemini-1.5-flash',
-    systemInstruction: 'Classifique se a mensagem é uma solicitação ou pedido.',
+    systemInstruction: 'Classifique se a mensagem é uma solicitação ou pedido. Se for solictação ou pedido responda sim, se não for solicitação ou pedifo responsa não',
   });
 
   const generationConfig = {
     temperature: 1,
     topP: 0.95,
     topK: 64,
-    maxOutputTokens: 1024,
+    maxOutputTokens: 50,
     responseMimeType: 'text/plain',
   };
 
@@ -113,7 +105,7 @@ async function getGeminiResponse(contactName, inputText) {
 
   const model = genAI.getGenerativeModel({
     model: 'gemini-1.5-flash',
-    systemInstruction: 'Você é minha recepcionista pessoal',
+    systemInstruction: 'Você é minha recepcionista pessoal. Anota recados.',
   });
 
   const generationConfig = {
@@ -177,3 +169,4 @@ async function createTrelloTask(title, description) {
   const url = `https://api.trello.com/1/cards?key=${trelloKey}&token=${trelloToken}&idList=${listId}&name=${encodeURIComponent(title)}&desc=${encodeURIComponent(description)}`;
 
   await axios.post(url);
+}
