@@ -177,4 +177,3 @@ async function createTrelloTask(title, description) {
   const url = `https://api.trello.com/1/cards?key=${trelloKey}&token=${trelloToken}&idList=${listId}&name=${encodeURIComponent(title)}&desc=${encodeURIComponent(description)}`;
 
   await axios.post(url);
-}
