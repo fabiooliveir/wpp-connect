@@ -33,7 +33,7 @@ wppconnect
 // Função que inicia a conexão com o WhatsApp
 function start(client) {
   client.onMessage(async (message) => {
-    if (message.isUser) {
+    if (message.from.includes('@c.us') && message.type === 'chat') {
       try {
         // Extrai o nome do contato
         const contactName = message.sender.pushname || message.sender.verifiedName || message.sender.formattedName || 'Contato';
@@ -105,14 +105,14 @@ async function getGeminiResponse(contactName, inputText) {
 
   const model = genAI.getGenerativeModel({
     model: 'gemini-1.5-flash',
-    systemInstruction: 'Você é minha recepcionista pessoal. Anota recados.',
+    systemInstruction: 'Você é minha recepcionista pessoal. As solicitações que recebe, você salva no meu trello pessoal para eu resover depois.',
   });
 
   const generationConfig = {
     temperature: 1,
     topP: 0.95,
     topK: 64,
-    maxOutputTokens: 8192,
+    maxOutputTokens: 500,
     responseMimeType: 'text/plain',
   };
 
