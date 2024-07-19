@@ -3,8 +3,6 @@ const dotenv = require('dotenv');
 const axios = require('axios');
 const {
   GoogleGenerativeAI,
-  HarmCategory,
-  HarmBlockThreshold,
 } = require('@google/generative-ai');
 
 // Carrega as variáveis de ambiente do arquivo .env
@@ -31,23 +29,38 @@ wppconnect
   .catch((error) => console.log(error));
 
 // Função que inicia a conexão com o WhatsApp
-function start(client) {
+async function start(client) {
   client.onMessage(async (message) => {
     if (message.from.includes('@c.us') && message.type === 'chat') {
       try {
         // Extrai o nome do contato
         const contactName = message.sender.pushname || message.sender.verifiedName || message.sender.formattedName || 'Contato';
 
-        // Verifica se a mensagem é uma solicitação
+        // Obtém todas as mensagens da conversa
+        const allMessages = await client.getAllMessagesInChat(message.from);
+        const uniqueMessages = filterUniqueMessages(allMessages);
+
+        // Prepara o histórico para o Gemini, excluindo a última mensagem
+        const history = uniqueMessages.slice(0, -1).map(msg => ({
+          role: msg.sender.pushname === contactName ? 'user' : 'model',
+          parts: [{ text: msg.body || '' }]
+        }));
+
+        // Exibe o histórico no console para verificação
+        console.log('Histórico para o Gemini:', JSON.stringify(history, null, 2));
+
+        // Verifica se há mensagens no histórico e pega a última mensagem
+        const lastMessage = uniqueMessages.length > 0 ? uniqueMessages[uniqueMessages.length - 1] : null;
+        const messageToSend = lastMessage ? lastMessage.body || message.body : message.body;
+
+        // Chama o Gemini para gerar a resposta
+        const response = await getGeminiResponse(contactName, messageToSend, history);
+        await client.sendText(message.from, response);
+        console.log('Resposta do Gemini enviada com sucesso');
+
+        // Verifica se a mensagem é uma solicitação e cria uma tarefa no Trello
         const isRequest = await isRequestMessage(message.body);
         if (isRequest) {
-          // Chama o Gemini para gerar a resposta apenas se for uma solicitação
-          const response = await getGeminiResponse(contactName, message.body);
-          const formattedResponse = `*Gemini:* ${response}`; // Prefixo em negrito
-          await client.sendText(message.from, formattedResponse);
-          console.log('Resposta do Gemini enviada com sucesso');
-
-          // Cria uma tarefa no Trello
           const taskTitle = `Nova Solicitação de ${contactName}`;
           const taskDescription = `**Mensagem Recebida:**\n${message.body}\n\n**Resposta do Gemini:**\n${response}`;
           await createTrelloTask(taskTitle, taskDescription);
@@ -62,15 +75,26 @@ function start(client) {
   });
 }
 
+// Função para filtrar mensagens únicas
+function filterUniqueMessages(messages) {
+  const seenMessageIds = new Set();
+  return messages.filter(msg => {
+    if (msg.id && msg.body && !seenMessageIds.has(msg.id) && msg.body.trim() !== '') {
+      seenMessageIds.add(msg.id);
+      return true;
+    }
+    return false;
+  });
+}
+
 // Função que verifica se a mensagem é uma solicitação
 async function isRequestMessage(inputText) {
-  // Use o modelo de análise de intenção do Gemini
   const apiKey = process.env.GEMINI_API_KEY;
   const genAI = new GoogleGenerativeAI(apiKey);
 
   const model = genAI.getGenerativeModel({
     model: 'gemini-1.5-flash',
-    systemInstruction: 'Classifique se a mensagem é uma solicitação ou pedido. Se for solictação ou pedido responda sim, se não for solicitação ou pedifo responsa não',
+    systemInstruction: 'Classifique se a mensagem é uma solicitação ou pedido. responda apenas sim ou não',
   });
 
   const generationConfig = {
@@ -83,12 +107,6 @@ async function isRequestMessage(inputText) {
 
   const chatSession = model.startChat({
     generationConfig,
-    history: [
-      {
-        role: 'user',
-        parts: [{ text: 'Esta é uma solicitação?' }],
-      },
-    ],
   });
 
   const result = await chatSession.sendMessage(inputText);
@@ -99,13 +117,13 @@ async function isRequestMessage(inputText) {
 }
 
 // Função que chama a API do Gemini para gerar a resposta
-async function getGeminiResponse(contactName, inputText) {
+async function getGeminiResponse(contactName, inputText, history) {
   const apiKey = process.env.GEMINI_API_KEY;
   const genAI = new GoogleGenerativeAI(apiKey);
 
   const model = genAI.getGenerativeModel({
     model: 'gemini-1.5-flash',
-    systemInstruction: 'Você é minha recepcionista pessoal. As solicitações que recebe, você salva no meu trello pessoal para eu resover depois.',
+    systemInstruction: 'Seu nome é Fábio, vocé é muito inteligente. Você trabalha com marketing digital. Voce trabalha home-office. Voce conversa parecido com o Abraham Lincoln. Voce ja estudou filosofia e teologia.',
   });
 
   const generationConfig = {
@@ -119,44 +137,15 @@ async function getGeminiResponse(contactName, inputText) {
   const chatSession = model.startChat({
     generationConfig,
     history: [
+      ...history,
       {
         role: 'user',
-        parts: [{ text: 'Quem é Fábio?' }],
-      },
-      {
-        role: 'model',
-        parts: [{ text: 'Fábio é meu criador\n' }],
-      },
-      {
-        role: 'user',
-        parts: [{ text: 'Qual o cargo do Fábio?' }],
-      },
-      {
-        role: 'model',
-        parts: [{ text: 'O Fábio é Analista de dados' }],
-      },
-      {
-        role: 'user',
-        parts: [{ text: 'Quem é você?' }],
-      },
-      {
-        role: 'model',
-        parts: [{ text: 'Meu nome é Gemini, sou a recepcionista virtual do Fábio' }],
-      },
-      {
-        role: 'user',
-        parts: [{ text: 'Posso falar com o Fábio?' }],
-      },
-      {
-        role: 'model',
-        parts: [{ text: 'Infelizmente, eu não posso conectar você diretamente com o Fábio. Ele está bastante ocupado com seu trabalho, mas posso transmitir uma mensagem para ele. Você pode me dizer o que gostaria de falar com ele? Ele vai responder assim que puder\n' }],
-      },
-    ],
+        parts: [{ text: `Mensagem de ${contactName}: ${inputText}` }],
+      }
+    ]
   });
 
-  // Inclui o nome do contato na mensagem enviada ao Gemini
-  const messageWithContactName = `Mensagem de ${contactName}: ${inputText}`;
-  const result = await chatSession.sendMessage(messageWithContactName);
+  const result = await chatSession.sendMessage(inputText);
   return result.response.text();
 }
 
